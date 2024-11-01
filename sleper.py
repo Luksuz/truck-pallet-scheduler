@@ -1,19 +1,11 @@
-import numpy as np
 import itertools
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from collections import Counter
 from typing import List, Tuple
 from itertools import permutations
+from collections import defaultdict
 
-# Constants
-MAIN_LENGTH = 13600  # Length of the main container
-MAIN_WIDTH = 2400    # Width of the main container
-CONTAINER_WIDTH = 1200  # Fixed width of incoming containers
-MIN_LENGTH = 1500    # Minimum length of incoming containers
-MAX_LENGTH = 13060   # Maximum length of incoming containers
-INCREMENT = 5        # Length increment for containers
-MAX_CONTAINERS = 10  # Maximum number of containers for feasibility
 
 def check_total_area(container_lengths: List[int], container_width: int, main_length: int, main_width: int) -> bool:
     """
@@ -163,9 +155,15 @@ def assign_remaining_containers(remaining_containers: List[int], container_lengt
     
 
 
-def visualize_assignment(container_lengths: List[int], assignments: List[Tuple[int, int]], main_length: int, main_width: int, container_width: int):
+def visualize_assignment(
+    container_lengths: List[int],
+    assignments: List[Tuple[int, int]],
+    main_length: int,
+    main_width: int,
+    container_width: int
+) -> List[plt.Figure]:
     """
-    Visualize the container assignments, highlighting paired containers.
+    Visualize the container assignments, ensuring that containers with the same length have the same color.
     """
     num_columns = 2
     columns = [[] for _ in range(num_columns)]
@@ -178,46 +176,70 @@ def visualize_assignment(container_lengths: List[int], assignments: List[Tuple[i
 
     # Identify paired containers for visualization
     paired_indices = set()
-    length_to_indices = {}
+    length_to_indices = defaultdict(list)
     for idx, length in enumerate(container_lengths):
-        length_to_indices.setdefault(length, []).append(idx)
+        length_to_indices[length].append(idx)
 
     for indices in length_to_indices.values():
         if len(indices) >= 2:
             paired_indices.update(indices[:2 * (len(indices) // 2)])
 
+    # Create a color map: assign the same color to containers with the same length
+    unique_lengths = sorted(set(container_lengths))
+    cmap = plt.get_cmap('tab20', len(unique_lengths))
+    length_color_map = {length: cmap(i) for i, length in enumerate(unique_lengths)}
+
     # Create a new figure for visualization
-    fig, ax = plt.subplots(figsize=(4, 3))
+    fig, ax = plt.subplots(figsize=(8, 6))
     ax.set_xlim(0, main_width)
     ax.set_ylim(0, main_length)
-    ax.set_xlabel('Width')
-    ax.set_ylabel('Length')
-    ax.set_title('Original Truck Optimized Pallet Packaging')
+    ax.set_xlabel('Width (mm)')
+    ax.set_ylabel('Length (mm)')
+    ax.set_title('Optimal Container Packing Visualization')
 
+    # Draw the main container
     main_rect = patches.Rectangle((0, 0), main_width, main_length, linewidth=2, edgecolor='black', facecolor='none')
     ax.add_patch(main_rect)
-
-    num_containers = len(container_lengths)
-    cmap = plt.get_cmap('tab20', num_containers + 1)
 
     for col in range(num_columns):
         current_height = 0
         for idx in columns[col]:
             length = container_lengths[idx]
-            rect = patches.Rectangle((col * container_width, current_height), 
-                                     container_width, length, 
-                                     linewidth=1, edgecolor='blue',
-                                     facecolor=cmap(idx), alpha=0.6)
-            # Highlight paired containers
+            color = length_color_map[length]
+            rect = patches.Rectangle(
+                (col * container_width, current_height),
+                container_width,
+                length,
+                linewidth=1,
+                edgecolor='blue' if idx not in paired_indices else 'red',
+                facecolor=color,
+                alpha=0.6
+            )
+            # Highlight paired containers with a thicker red edge
             if idx in paired_indices:
                 rect.set_edgecolor('red')
                 rect.set_linewidth(2)
             ax.add_patch(rect)
-            ax.text(col * container_width + container_width / 2, 
-                    current_height + length / 2, 
-                    str(idx + 1), 
-                    ha='center', va='center', fontsize=8, color='white')
+            # Annotate the container with its index
+            ax.text(
+                col * container_width + container_width / 2,
+                current_height + length / 2,
+                str(idx + 1),
+                ha='center',
+                va='center',
+                fontsize=8,
+                color='white'
+            )
             current_height += length
 
-    return [fig]
+    # Create a legend for container lengths
+    handles = [
+        patches.Patch(color=color, label=f'Length {length} mm')
+        for length, color in length_color_map.items()
+    ]
+    ax.legend(handles=handles, title='Container Lengths', bbox_to_anchor=(1.05, 1), loc='upper left')
 
+    # Set aspect ratio to equal to maintain scaling
+    ax.set_aspect('equal', adjustable='box')
+
+    return [fig]
