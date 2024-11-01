@@ -19,7 +19,7 @@ MAIN_LENGTH = 13600  # Length of the main container
 MAIN_WIDTH = 2400    # Width of the main container
 CONTAINER_WIDTH = 1200  # Fixed width of incoming containers
 MIN_LENGTH = 800    # Minimum length of incoming containers
-MAX_LENGTH = 30360   # Maximum length of incoming containers
+MAX_LENGTH = 3060   # Maximum length of incoming containers
 MAIN_CONTAINERS = [
     {"name": "Container A - Column 1", "max_length": 7300, "current_length": 0},
     {"name": "Container A - Column 2", "max_length": 7300, "current_length": 0},
