@@ -184,14 +184,14 @@ def visualize_assignment(
 
     # Function to plot a single main container
     def plot_main_container(assignments, main_container_columns, main_container_name):
-        fig, ax = plt.subplots(figsize=(10, 6))  # Adjusted figure size for better compactness
+        fig, ax = plt.subplots(figsize=(5, 3))  # Adjusted figure size for better compactness
 
         max_length = max([columns[col]["max_length"] for col in main_container_columns])
         ax.set_xlim(0, container_width * len(main_container_columns) + 100)
         ax.set_ylim(0, max_length)
         ax.set_xlabel('Width (mm)')
         ax.set_ylabel('Length (mm)')
-        ax.set_title(f'Optimal Container Packing for {main_container_name}')
+        ax.set_title(f'Optimal Pallet Packing for {main_container_name}')
 
         # Define color map
         num_containers = len(container_lengths)
@@ -204,8 +204,6 @@ def visualize_assignment(
             main_rect = patches.Rectangle((x_offset, 0), container_width, col["max_length"],
                                           linewidth=2, edgecolor='black', facecolor='none')
             ax.add_patch(main_rect)
-            ax.text(x_offset + container_width / 2, col["max_length"] + 50, col["name"],
-                    ha='center', va='bottom', fontsize=10, fontweight='bold')
 
             # Draw containers within the column
             current_height = 0
@@ -234,10 +232,10 @@ def visualize_assignment(
         return fig
 
     # Plot Container A
-    fig_a = plot_main_container(assignments_a, container_a_columns, "Container A")
+    fig_a = plot_main_container(assignments_a, container_a_columns, "Tandem Truck")
 
     # Plot Container B
-    fig_b = plot_main_container(assignments_b, container_b_columns, "Container B")
+    fig_b = plot_main_container(assignments_b, container_b_columns, "Tandem Trailer")
 
     return [fig_a, fig_b]
 
