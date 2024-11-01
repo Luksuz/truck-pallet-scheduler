@@ -1,9 +1,4 @@
 import streamlit as st
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from collections import Counter
-from typing import List, Tuple
-from itertools import permutations
 
 # Import your custom modules
 from sleper import (
@@ -11,20 +6,27 @@ from sleper import (
     pair_containers as sleper_pair_containers,
     find_optimal_assignment as sleper_find_optimal_assignment,
     visualize_assignment as sleper_visualize_assignment,
-    MAIN_LENGTH,
-    MAIN_WIDTH,
-    CONTAINER_WIDTH,
-    MIN_LENGTH,
-    MAX_LENGTH,
-    MAX_CONTAINERS
 )
 from kip import (
     check_total_area as kip_check_total_area,
     pair_containers as kip_pair_containers,
     find_optimal_assignment as kip_find_optimal_assignment,
     visualize_assignment as kip_visualize_assignment,
-    MAIN_CONTAINERS
 )
+
+
+MAIN_LENGTH = 13600  # Length of the main container
+MAIN_WIDTH = 2400    # Width of the main container
+CONTAINER_WIDTH = 1200  # Fixed width of incoming containers
+MIN_LENGTH = 800    # Minimum length of incoming containers
+MAX_LENGTH = 30360   # Maximum length of incoming containers
+MAIN_CONTAINERS = [
+    {"name": "Container A - Column 1", "max_length": 7300, "current_length": 0},
+    {"name": "Container A - Column 2", "max_length": 7300, "current_length": 0},
+    {"name": "Container B - Column 1", "max_length": 8200, "current_length": 0},
+    {"name": "Container B - Column 2", "max_length": 8200, "current_length": 0}
+]
+
 
 # Constants (Ensure these are defined in your modules)
 # MAIN_LENGTH, MAIN_WIDTH, CONTAINER_WIDTH, MIN_LENGTH, MAX_LENGTH, MAX_CONTAINERS, MAIN_CONTAINERS
@@ -34,10 +36,8 @@ if 'pallets' not in st.session_state:
     st.session_state.pallets = [{'length': MIN_LENGTH, 'count': 1}]
 
 def add_pallet():
-    if len(st.session_state.pallets) < MAX_CONTAINERS:
-        st.session_state.pallets.append({'length': MIN_LENGTH, 'count': 1})
-    else:
-        st.warning(f"Maximum of {MAX_CONTAINERS} pallets reached.")
+    st.session_state.pallets.append({'length': MIN_LENGTH, 'count': 1})
+
 
 def remove_pallet():
     if len(st.session_state.pallets) > 1:
@@ -82,7 +82,6 @@ def main():
                 st.session_state.pallets[idx]['count'] = st.number_input(
                     f"Pallet {idx + 1} Count",
                     min_value=1,
-                    max_value=MAX_CONTAINERS,  # Adjust as needed
                     value=pallet['count'],
                     step=1,
                     key=count_key
@@ -108,24 +107,15 @@ def execute_packing():
             # Repeat the length based on count
             container_lengths.extend([length] * count)
 
-        total_containers = len(container_lengths)
-        if total_containers > MAX_CONTAINERS:
-            raise ValueError(f"Total number of containers ({total_containers}) exceeds the maximum allowed ({MAX_CONTAINERS}).")
-
-        st.success("Input validation successful.")
-        st.write(f"**Total Containers:** {total_containers}")
-        st.write(f"**Container Lengths (mm):** {container_lengths}")
-
         # First attempt: Try using sleper.py logic
-        st.info("Attempting packing using **sleper.py** logic...")
+        st.info("Attempting packing using the main truck...")
         if sleper_check_total_area(container_lengths, CONTAINER_WIDTH, MAIN_LENGTH, MAIN_WIDTH):
             paired_containers, remaining_containers = sleper_pair_containers(container_lengths)
             try:
                 assignments, column_heights, optimal_max_height = sleper_find_optimal_assignment(
                     paired_containers, remaining_containers, container_lengths, MAIN_LENGTH
                 )
-                st.success("Packing successful using **sleper.py** logic.")
-                st.write(f"**Assignments:** {assignments}")
+                st.success("Packing successful using the main truck.")
 
                 # Visualize the assignment
                 figures = sleper_visualize_assignment(container_lengths, assignments, MAIN_LENGTH, MAIN_WIDTH, CONTAINER_WIDTH)
@@ -138,20 +128,19 @@ def execute_packing():
                     st.warning("Visualization function did not return any figures for sleper.py logic.")
                 return
             except ValueError as e:
-                st.warning(f"Sleper logic failed: {e}")
+                st.warning(f"Cannot execute packing the main truck: {e}")
         else:
-            st.warning("Total area check failed for sleper.py logic.")
+            st.warning("Total surface area of the pallets exceeds the container surface, trying tandem truck packing.")
 
         # Second attempt: Use kip.py logic
-        st.info("Attempting packing using **kip.py** logic...")
+        st.info("Attempting packing using tandem truck")
         if kip_check_total_area(container_lengths, CONTAINER_WIDTH, MAIN_CONTAINERS):
             paired_containers, remaining_containers = kip_pair_containers(container_lengths)
             optimal_assignment, column_heights, optimal_max_height = kip_find_optimal_assignment(
                 paired_containers, remaining_containers, container_lengths, MAIN_CONTAINERS
             )
             if optimal_assignment is not None:
-                st.success("Packing successful using **kip.py** logic.")
-                st.write(f"**Optimal Assignment:** {optimal_assignment}")
+                st.success("Packing successful using tandem truck.")
 
                 # Visualize the assignment
                 figures = kip_visualize_assignment(container_lengths, optimal_assignment, MAIN_CONTAINERS, paired_containers, CONTAINER_WIDTH)
@@ -161,11 +150,11 @@ def execute_packing():
                         fig.axes[0].set_aspect('equal', adjustable='box')
                         st.pyplot(fig)
                 else:
-                    st.warning("Visualization function did not return any figures for kip.py logic.")
+                    st.warning("Visualization function did not return any figures for tandem truck.")
             else:
-                st.error("No valid assignment found using **kip.py** logic.")
+                st.error("No valid assignment found using tandem truck logic.")
         else:
-            st.error("The total surface area of the containers exceeds that of the main containers in **kip.py** logic.")
+            st.error("The total surface area of the containers exceeds that of tandem truck spaces.")
 
     except ValueError as ve:
         st.error(f"**Invalid Input:** {ve}")
