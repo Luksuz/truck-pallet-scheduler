@@ -187,12 +187,12 @@ def visualize_assignment(container_lengths: List[int], assignments: List[Tuple[i
             paired_indices.update(indices[:2 * (len(indices) // 2)])
 
     # Create a new figure for visualization
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(4, 3))
     ax.set_xlim(0, main_width)
     ax.set_ylim(0, main_length)
     ax.set_xlabel('Width')
     ax.set_ylabel('Length')
-    ax.set_title('Optimal Container Packing Visualization')
+    ax.set_title('Original Truck Optimized Pallet Packaging')
 
     main_rect = patches.Rectangle((0, 0), main_width, main_length, linewidth=2, edgecolor='black', facecolor='none')
     ax.add_patch(main_rect)
