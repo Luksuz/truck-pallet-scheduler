@@ -1,5 +1,3 @@
-import numpy as np
-import random
 import itertools
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -7,26 +5,6 @@ from collections import Counter
 from typing import List, Tuple
 
 # Constants for the two main containers
-MAIN_CONTAINERS = [
-    {"name": "Container A - Column 1", "max_length": 7300, "current_length": 0},
-    {"name": "Container A - Column 2", "max_length": 7300, "current_length": 0},
-    {"name": "Container B - Column 1", "max_length": 8200, "current_length": 0},
-    {"name": "Container B - Column 2", "max_length": 8200, "current_length": 0}
-]
-
-CONTAINER_WIDTH = 1200  # Fixed width of incoming containers
-MIN_LENGTH = 1500       # Minimum length of incoming containers
-MAX_LENGTH = 3060       # Maximum length of incoming containers
-INCREMENT = 5           # Length increment for containers
-NUM_CONTAINERS = 3      # Number of containers for the test case
-
-def generate_containers(num_containers: int, min_length: int, max_length: int, increment: int) -> List[int]:
-    """
-    Generates a predefined list of container lengths for testing.
-    """
-    # For the test case, return [8000, 7000, 6000]
-    return sorted([8000, 8000, 6000, 6000], reverse=True)
-
 def check_total_area(container_lengths: List[int], container_width: int, main_containers: List[dict]) -> bool:
     """
     Checks if the total area of incoming containers fits within the combined area of main containers.
@@ -151,20 +129,22 @@ def find_optimal_assignment(
 
     return assignments, column_heights, optimal_max_height
 
+
+
 def visualize_assignment(
     container_lengths: List[int], 
     assignments: List[Tuple[int, int]], 
     columns: List[dict], 
     paired_containers: List[Tuple[int, int]], 
     container_width: int
-):
+) -> List[plt.Figure]:
     """
     Visualizes the container assignments to the columns within main containers.
-    Creates two separate figures—one for each main container.
+    Ensures that containers with the same length have the same color across all main containers.
 
     Args:
-        container_lengths (List[int]): Container lengths.
-        assignments (List[Tuple[int, int]]): Assignments as (container_idx, column_idx).
+        container_lengths (List[int]): List of container lengths.
+        assignments (List[Tuple[int, int]]): List of assignments as (container_idx, column_idx).
         columns (List[dict]): List of columns with their properties.
         paired_containers (List[Tuple[int, int]]): List of paired container indices.
         container_width (int): Fixed width of incoming containers.
@@ -182,25 +162,27 @@ def visualize_assignment(
     assignments_a = [assignment for assignment in assignments if assignment[1] in container_a_columns]
     assignments_b = [assignment for assignment in assignments if assignment[1] in container_b_columns]
 
+    # Extract all unique lengths for color mapping
+    unique_lengths = sorted(set(container_lengths))
+    cmap = plt.get_cmap('tab20', len(unique_lengths))
+    length_color_map = {length: cmap(i) for i, length in enumerate(unique_lengths)}
+
     # Function to plot a single main container
     def plot_main_container(assignments, main_container_columns, main_container_name):
-        fig, ax = plt.subplots(figsize=(5, 3))  # Adjusted figure size for better compactness
+        fig, ax = plt.subplots(figsize=(8, 6))  # Adjusted figure size for better clarity
 
+        # Determine the maximum length among the columns for setting plot limits
         max_length = max([columns[col]["max_length"] for col in main_container_columns])
-        ax.set_xlim(0, container_width * len(main_container_columns) + 100)
+        ax.set_xlim(0, container_width * len(main_container_columns) + 100)  # Extra space for clarity
         ax.set_ylim(0, max_length)
         ax.set_xlabel('Width (mm)')
         ax.set_ylabel('Length (mm)')
         ax.set_title(f'Optimal Pallet Packing for {main_container_name}')
 
-        # Define color map
-        num_containers = len(container_lengths)
-        cmap = plt.get_cmap('tab20', num_containers + 1)
-
+        # Draw the main container boundaries
         for col_idx in main_container_columns:
             col = columns[col_idx]
             x_offset = (col_idx % 2) * (container_width + 50)  # Adjusted spacing between columns
-            # Draw the column rectangle
             main_rect = patches.Rectangle((x_offset, 0), container_width, col["max_length"],
                                           linewidth=2, edgecolor='black', facecolor='none')
             ax.add_patch(main_rect)
@@ -212,23 +194,43 @@ def visualize_assignment(
                 if assigned_col != col_idx:
                     continue
                 length = container_lengths[container_idx]
+                color = length_color_map[length]
                 is_paired = container_idx in paired_set
-                rect = patches.Rectangle((x_offset, current_height), 
-                                         container_width, length, 
-                                         linewidth=1, edgecolor='blue',
-                                         facecolor=cmap(container_idx), alpha=0.7)
+                rect = patches.Rectangle(
+                    (x_offset, current_height),
+                    container_width,
+                    length,
+                    linewidth=1,
+                    edgecolor='blue' if not is_paired else 'red',
+                    facecolor=color,
+                    alpha=0.7
+                )
                 ax.add_patch(rect)
-                ax.text(x_offset + container_width / 2, 
-                        current_height + length / 2, 
-                        str(container_idx + 1), 
-                        ha='center', va='center', fontsize=8, color='white')
+                # Annotate the container with its index
+                ax.text(
+                    x_offset + container_width / 2,
+                    current_height + length / 2,
+                    str(container_idx + 1),
+                    ha='center',
+                    va='center',
+                    fontsize=8,
+                    color='white'
+                )
                 if is_paired:
                     rect.set_edgecolor('red')
                     rect.set_linewidth(2)
                 current_height += length
 
-        ax.invert_yaxis()
-        plt.tight_layout()
+        # Create a legend for container lengths
+        handles = [
+            patches.Patch(color=color, label=f'Length {length} mm')
+            for length, color in length_color_map.items()
+        ]
+        ax.legend(handles=handles, title='Container Lengths', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        # Set aspect ratio to equal to maintain scaling
+        ax.set_aspect('equal', adjustable='box')
+
         return fig
 
     # Plot Container A
