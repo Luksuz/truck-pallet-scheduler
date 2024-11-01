@@ -51,7 +51,7 @@ def main():
 
     st.markdown("""
     This application allows you to input the lengths and counts of pallets to determine the optimal packing strategy 
-    using two different algorithms (`sleper` and `kip`). You can visualize the packing assignments and receive 
+    using two different permutation algorithms. You can visualize the packing assignments and receive 
     feedback on the success of the packing process.
     """)
 
