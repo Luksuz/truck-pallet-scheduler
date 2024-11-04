@@ -15,16 +15,16 @@ from kip import (
 )
 
 
-MAIN_LENGTH = 13600  # Length of the main container
+MAIN_LENGTH = 13300  # Length of the main container
 MAIN_WIDTH = 2400    # Width of the main container
 CONTAINER_WIDTH = 1200  # Fixed width of incoming containers
 MIN_LENGTH = 800    # Minimum length of incoming containers
-MAX_LENGTH = 3060   # Maximum length of incoming containers
+MAX_LENGTH = 30360   # Maximum length of incoming containers
 MAIN_CONTAINERS = [
-    {"name": "Container A - Column 1", "max_length": 7300, "current_length": 0},
-    {"name": "Container A - Column 2", "max_length": 7300, "current_length": 0},
-    {"name": "Container B - Column 1", "max_length": 8200, "current_length": 0},
-    {"name": "Container B - Column 2", "max_length": 8200, "current_length": 0}
+    {"name": "Container A - Column 1", "max_length": 7100, "current_length": 0},
+    {"name": "Container A - Column 2", "max_length": 7100, "current_length": 0},
+    {"name": "Container B - Column 1", "max_length": 8000, "current_length": 0},
+    {"name": "Container B - Column 2", "max_length": 8000, "current_length": 0}
 ]
 
 
@@ -116,6 +116,8 @@ def execute_packing():
                     paired_containers, remaining_containers, container_lengths, MAIN_LENGTH
                 )
                 st.success("Packing successful using the main truck.")
+                st.write(f"Space taken in first row: {column_heights[0]}")
+                st.write(f"Space taken in second row: {column_heights[1]}")
 
                 # Visualize the assignment
                 figures = sleper_visualize_assignment(container_lengths, assignments, MAIN_LENGTH, MAIN_WIDTH, CONTAINER_WIDTH)
@@ -147,6 +149,8 @@ def execute_packing():
                 if figures:
                     for fig in figures:
                         # Ensure that both axes are scaled correctly
+                        fig.text(0.65, 0.6, f"right side = {column_heights.pop(0)} mm")
+                        fig.text(0.65, 0.5, f"left side = {column_heights.pop(0)} mm")
                         fig.axes[0].set_aspect('equal', adjustable='box')
                         st.pyplot(fig)
                 else:
